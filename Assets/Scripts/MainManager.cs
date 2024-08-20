@@ -1,41 +1,43 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 public class MainManager : MonoBehaviour
 {
+    [SerializeField]
+    private Text _highScoreText;
+
     public Brick BrickPrefab;
     public int LineCount = 6;
     public Rigidbody Ball;
-
     public Text ScoreText;
     public GameObject GameOverText;
-    
+
     private bool m_Started = false;
-    private int m_Points;
-    
+    private int _score;
+
     private bool m_GameOver = false;
 
-    
+    private int Score
+    {
+        get => _score;
+        set
+        {
+            _score = value;
+            ScoreText.text = $"Score: {_score}";
+        }
+    }
+    private GameManager Main => GameManager.Instance;
+
     // Start is called before the first frame update
     void Start()
     {
-        const float step = 0.6f;
-        int perLine = Mathf.FloorToInt(4.0f / step);
-        
-        int[] pointCountArray = new [] {1,1,2,2,5,5};
-        for (int i = 0; i < LineCount; ++i)
+        if (Main.BestScore != null)
         {
-            for (int x = 0; x < perLine; ++x)
-            {
-                Vector3 position = new Vector3(-1.5f + step * x, 2.5f + i * 0.3f, 0);
-                var brick = Instantiate(BrickPrefab, position, Quaternion.identity);
-                brick.PointValue = pointCountArray[i];
-                brick.onDestroyed.AddListener(AddPoint);
-            }
+            _highScoreText.gameObject.SetActive(true);
+            _highScoreText.text = $"Best Score: {Main.BestScore.Name} - {Main.BestScore.Score}";
         }
+        BuildBricks();
     }
 
     private void Update()
@@ -62,15 +64,30 @@ public class MainManager : MonoBehaviour
         }
     }
 
-    void AddPoint(int point)
+    private void BuildBricks()
     {
-        m_Points += point;
-        ScoreText.text = $"Score : {m_Points}";
+        const float step = 0.6f;
+        int perLine = Mathf.FloorToInt(4.0f / step);
+
+        int[] pointCountArray = new[] { 1, 1, 2, 2, 5, 5 };
+        for (int i = 0; i < LineCount; ++i)
+        {
+            for (int x = 0; x < perLine; ++x)
+            {
+                Vector3 position = new Vector3(-1.5f + step * x, 2.5f + i * 0.3f, 0);
+                var brick = Instantiate(BrickPrefab, position, Quaternion.identity);
+                brick.PointValue = pointCountArray[i];
+                brick.onDestroyed.AddListener(AddPoint);
+            }
+        }
     }
+
+    void AddPoint(int point) => Score += point;
 
     public void GameOver()
     {
         m_GameOver = true;
         GameOverText.SetActive(true);
+        Main.SaveScoreIfIsHigher(Score);
     }
 }
